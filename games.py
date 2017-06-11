@@ -141,7 +141,7 @@ def query_player(game, state):
     game.display(state)
     print("available moves: {}".format(game.actions(state)))
     print("")
-    move_string = input('Your move? ')
+    move_string = input('Your move? [0 for first card, 1 for second card, 2 for third card]: ')
 
     try:
         index = int(move_string)
@@ -359,7 +359,6 @@ class Briscas(Game):
             board['cardsPlayed'].append(playerBPlayedCard)
 
             board['cardsNotPlayed'].remove(playerBPlayedCard)
-            print(playerAPlayedCard, playerBPlayedCard,trumpCard,len(board['cardsNotPlayed']), len(self.cards))
 
 
 
