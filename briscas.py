@@ -543,14 +543,14 @@ class Briscas(Game):
         print('Trump Card: [' + str(state.board['trumpCard'][0]) + ' of ' + state.board['trumpCard'][1].upper() + "]")
         print('Cards left in deck: ' + str(len(self.cards)))
         
-        numberOfCards = len(self.playerAHand)
-        for i in range(0, numberOfCards):
-            card = self.playerAHand[i]
-            if(i == 0):
-                movesStr = str(card[0]) + ' of ' + card[1].upper()
-            else:
-                movesStr += ']   [' + str(card[0]) + ' of ' + card[1].upper()
-        print('Player A Hand: [' + movesStr + ']')
+#        numberOfCards = len(self.playerAHand)
+#        for i in range(0, numberOfCards):
+#            card = self.playerAHand[i]
+#            if(i == 0):
+#                movesStr = str(card[0]) + ' of ' + card[1].upper()
+#            else:
+#                movesStr += ']   [' + str(card[0]) + ' of ' + card[1].upper()
+#        print('Player A Hand: [' + movesStr + ']')
 
         if(state.board['playerAPlayedCard'] is not None):
             print('\n\n\t\t\t\tPlayer A played: [' + str(state.board['playerAPlayedCard'][0]) + ' of ' + state.board['playerAPlayedCard'][1].upper() + "]")
