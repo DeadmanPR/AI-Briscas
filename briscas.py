@@ -58,33 +58,38 @@ def minimax_decision(state, game):
 # ______________________________________________________________________________
 
 
-def alphabeta_full_search(state, game):
+def alphabeta_full_search(state, game, d=10):
     """Search game to determine best action; use alpha-beta pruning.
     As in [Figure 5.7], this version searches all the way to the leaves."""
 
 
-    #player = game.to_move(state)
-    player = 'A'
+    player = game.to_move(state)
+    #player = 'A'
 
 
     # Functions used by alphabeta
-    def max_value(state, alpha, beta):
-        if gameSim.terminal_test(state):
+    def max_value(state, alpha, beta, depth):
+        #print('MAX DEPTH: ' + str(depth))
+        if cutoff_test(state, depth):
             return gameSim.utility(state, player)
+        #if gameSim.terminal_test(state):
+        #    return gameSim.utility(state, player)
         v = -infinity
         for a in gameSim.actions(state):
-            v = max(v, min_value(gameSim.result(state, a), alpha, beta))
+            v = max(v, min_value(gameSim.result(state, a), alpha, beta, depth+1))
             if v >= beta:
                 return v
             alpha = max(alpha, v)
         return v
 
-    def min_value(state, alpha, beta):
-        if gameSim.terminal_test(state):
+    def min_value(state, alpha, beta, depth):
+        #print('MIN DEPTH: ' + str(depth))
+        if cutoff_test(state, depth):
             return gameSim.utility(state, player)
+
         v = infinity
         for a in gameSim.actions(state):
-            v = min(v, max_value(gameSim.result(state, a), alpha, beta))
+            v = min(v, max_value(gameSim.result(state, a), alpha, beta, depth+1))
             if v <= alpha:
                 return v
             beta = min(beta, v)
@@ -95,17 +100,20 @@ def alphabeta_full_search(state, game):
     beta = infinity
     best_action = None
 
+    cutoff_test = (lambda state, depth: depth > d or
+                    game.terminal_test(state))
     # MonteCarlo simulation
     for i in range(0, 100):
         gameSim = Briscas()
         deck = copy.deepcopy(state.board['cardsNotPlayed'])
         random.shuffle(deck)
-        gameSim.setSimulationCards(state.board['playerAHand'],deck, state.board['trumpCard'])
+        gameSim.setSimulationCards(state)
         state = copy.deepcopy(state)
-
+        
         for a in gameSim.actions(state):
+                
 
-                v = min_value(gameSim.result(state, a), best_score, beta)
+                v = min_value(gameSim.result(state, a), best_score, beta, 0)
                 if v > best_score:
                     best_score = v
                     best_action = a
@@ -124,8 +132,8 @@ def alphabeta_search(state, game, d=4, cutoff_test=None, eval_fn=None):
         if cutoff_test(state, depth):
             return eval_fn(state)
         v = -infinity
-        for a in game.actions(state):
-            v = max(v, min_value(game.result(state, a),
+        for a in gameSim.actions(state):
+            v = max(v, min_value(gameSim.result(state, a),
                                  alpha, beta, depth + 1))
             if v >= beta:
                 return v
@@ -136,8 +144,8 @@ def alphabeta_search(state, game, d=4, cutoff_test=None, eval_fn=None):
         if cutoff_test(state, depth):
             return eval_fn(state)
         v = infinity
-        for a in game.actions(state):
-            v = min(v, max_value(game.result(state, a),
+        for a in gameSim.actions(state):
+            v = min(v, max_value(gameSim.result(state, a),
                                  alpha, beta, depth + 1))
             if v <= alpha:
                 return v
@@ -153,6 +161,13 @@ def alphabeta_search(state, game, d=4, cutoff_test=None, eval_fn=None):
     best_score = -infinity
     beta = infinity
     best_action = None
+    
+    gameSim = Briscas()
+    deck = copy.deepcopy(state.board['cardsNotPlayed'])
+    random.shuffle(deck)
+    gameSim.setSimulationCards(state.board['playerAHand'],deck, state.board['trumpCard'])
+    state = copy.deepcopy(state)
+    
     for a in game.actions(state):
         v = min_value(game.result(state, a), best_score, beta, 1)
         if v > best_score:
@@ -371,21 +386,21 @@ class Briscas(Game):
 
         
         
-    def setSimulationCards(self, playerHand, cardsNotPlayed, trumpCard):
-        self.playerAHand = copy.deepcopy(playerHand)
-        self.cards = copy.deepcopy(cardsNotPlayed)
-        self.trump = copy.deepcopy(trumpCard)
+    def setSimulationCards(self, state):
+        self.playerAHand = copy.deepcopy(state.board['playerAHand'])
+        self.cards = copy.deepcopy(state.board['cardsNotPlayed'])
+        self.trump = copy.deepcopy(state.board['trumpCard'])
 
         # Deal Player B Hand
         for j in range(0, 3):
-            index = random.randint(0, len(self.cards) - 1)
+            index = random.randint(0, len(self.cards)-1)
             self.playerBHand.append(self.cards.pop(index))
 
+        
         moves = self.playerAHand
         self.cardsNotPlayed = copy.deepcopy(self.cards)
         self.cardsNotPlayed.extend(copy.deepcopy(self.playerBHand))
-
-        self.initial = GameState(to_move='A', utility=0, board={'playerAHand':self.playerAHand, 'playerAPlayedCard':None, 'playerBPlayedCard':None,'cardsPlayed':[], 'cardsNotPlayed': self.cardsNotPlayed,'trumpCard':self.trump,'playerAPoints':0, 'playerBPoints':0, 'leadingPlayer':None}, moves=moves)
+        self.initial = GameState(to_move=state.to_move, utility=state.utility, board=state.board, moves=state.moves)
 
     def startGame(self):
         self.play_game()
@@ -581,6 +596,15 @@ class Briscas(Game):
         print('Player B\'s points: ' + str(self.playerBPoints))
         print('Trump Card: [' + str(state.board['trumpCard'][0]) + ' of ' + state.board['trumpCard'][1].upper() + "]")
         print('Cards left in deck: ' + str(len(self.cards)))
+        
+        numberOfCards = len(self.playerAHand)
+        for i in range(0, numberOfCards):
+            card = self.playerAHand[i]
+            if(i == 0):
+                movesStr = str(card[0]) + ' of ' + card[1].upper()
+            else:
+                movesStr += ']   [' + str(card[0]) + ' of ' + card[1].upper()
+        print('Player A Hand: [' + movesStr + ']')
 
         if(state.board['playerAPlayedCard'] is not None):
             print('\n\n\t\t\t\tPlayer A played: [' + str(state.board['playerAPlayedCard'][0]) + ' of ' + state.board['playerAPlayedCard'][1].upper() + "]")
