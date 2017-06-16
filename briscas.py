@@ -17,6 +17,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 from collections import namedtuple
 import random
 import copy
+import tkinter as tk
+from tkinter import messagebox
 
 from utils import argmax
 
@@ -166,13 +168,29 @@ def query_player(game, state):
     """Make a move by querying standard input."""
     print("\n\n\n====================================================================================================\ncurrent state:")
     game.display(state)
-    print("available moves: {}".format(game.actions(state)))
+    #print("available moves: {}".format(game.actions(state)))
+    
+    numberOfCards = len(game.actions(state))
+    for i in range(0, numberOfCards):
+        card = game.actions(state)[i]
+        if(i == 0):
+            movesStr = str(card[0]) + ' of ' + card[1].upper()
+        else:
+            movesStr += ']   [' + str(card[0]) + ' of ' + card[1].upper()
+            
+    print("available moves: [" + movesStr + "]")
+    if(numberOfCards == 3):
+        print("\t\t     (0)\t\t(1)\t\t(2)")
+    elif(numberOfCards == 2):
+        print("\t\t     (0)\t\t(1)")
+    else:
+        print("\t\t     (0)")
+        
     print("")
 
     validInput = False
 
     while(not validInput):
-        numberOfCards = len(game.actions(state))
         if (numberOfCards == 3):
             move_string = input('Your move? [0 for first card, 1 for second card, 2 for third card]: ')
         elif (numberOfCards == 2):
@@ -182,8 +200,12 @@ def query_player(game, state):
 
         try:
             index = int(move_string)
-            validInput = True
-
+           
+            
+            if(index >= numberOfCards):
+                 print('Please choose between the possible moves!')
+            else:
+                validInput = True
         except ValueError:
             print('Please choose between the possible moves!')
             validInput = False
@@ -341,9 +363,14 @@ class Briscas(Game):
         self.cardsNotPlayed = self.cards.copy()
         self.cardsNotPlayed.extend(self.playerBHand)
 
+        
         self.initial = GameState(to_move='A', utility=0, board={'playerAHand':self.playerAHand, 'playerAPlayedCard':None, 'playerBPlayedCard':None,'cardsPlayed':[], 'cardsNotPlayed': self.cardsNotPlayed,'trumpCard':self.trump,'playerAPoints':0, 'playerBPoints':0, 'leadingPlayer':None}, moves=moves)
+        
+        window = tk.Tk();
+        window.withdraw()
 
-
+        
+        
     def setSimulationCards(self, playerHand, cardsNotPlayed, trumpCard):
         self.playerAHand = copy.deepcopy(playerHand)
         self.cards = copy.deepcopy(cardsNotPlayed)
@@ -359,7 +386,6 @@ class Briscas(Game):
         self.cardsNotPlayed.extend(copy.deepcopy(self.playerBHand))
 
         self.initial = GameState(to_move='A', utility=0, board={'playerAHand':self.playerAHand, 'playerAPlayedCard':None, 'playerBPlayedCard':None,'cardsPlayed':[], 'cardsNotPlayed': self.cardsNotPlayed,'trumpCard':self.trump,'playerAPoints':0, 'playerBPoints':0, 'leadingPlayer':None}, moves=moves)
-
 
     def startGame(self):
         self.play_game()
@@ -428,6 +454,7 @@ class Briscas(Game):
                             self.playerBHand.append(self.cards.pop(len(self.cards) - 1))
 
                     self.playerAPoints += playerAPlayedCard[2] + playerBPlayedCard[2]
+                    board['leadingPlayer'] = ''
                     return GameState(to_move='A', utility=self.playerAPoints, board=board, moves=self.playerAHand)
 
                 elif (playerBPlayedCard[2] > playerAPlayedCard[2]):  # B won the hand
@@ -441,6 +468,7 @@ class Briscas(Game):
                             # board['cardsNotPlayed'].remove(self.playerAHand[len(self.playerAHand)-1])
 
                     self.playerBPoints += playerAPlayedCard[2] + playerBPlayedCard[2]
+                    board['leadingPlayer'] = ''
                     return GameState(to_move='B', utility=self.playerAPoints, board=board, moves=self.playerBHand)
 
                 elif (playerAPlayedCard[0] > playerBPlayedCard[0]):  # Same value, higher number wins
@@ -455,6 +483,7 @@ class Briscas(Game):
                             self.playerBHand.append(self.cards.pop(len(self.cards) - 1))
 
                     self.playerAPoints += playerAPlayedCard[2] + playerBPlayedCard[2]
+                    board['leadingPlayer'] = ''
                     return GameState(to_move='A', utility=self.playerAPoints, board=board, moves=self.playerAHand)
 
                 elif (playerBPlayedCard[0] > playerAPlayedCard[0]):  # Higher number wins
@@ -468,6 +497,7 @@ class Briscas(Game):
                             # board['cardsNotPlayed'].remove(self.playerAHand[len(self.playerAHand)-1])
 
                 self.playerBPoints += playerAPlayedCard[2] + playerBPlayedCard[2]
+                board['leadingPlayer'] = ''
                 return GameState(to_move='B', utility=self.playerAPoints, board=board, moves=self.playerBHand)
 
             elif (playerAPlayedCard[1] == trumpCard[1]):  # A won the hand
@@ -482,6 +512,7 @@ class Briscas(Game):
                         self.playerBHand.append(self.cards.pop(len(self.cards) - 1))
 
                 self.playerAPoints += playerAPlayedCard[2] + playerBPlayedCard[2]
+                board['leadingPlayer'] = ''
                 return GameState(to_move='A', utility=self.playerAPoints, board=board, moves=self.playerAHand)
 
             elif (playerBPlayedCard[1] == trumpCard[1]):  # B won the hand
@@ -495,6 +526,7 @@ class Briscas(Game):
                         # board['cardsNotPlayed'].remove(self.playerAHand[len(self.playerAHand)-1])
 
                 self.playerBPoints += playerAPlayedCard[2] + playerBPlayedCard[2]
+                board['leadingPlayer'] = ''
                 return GameState(to_move='B', utility=self.playerAPoints, board=board, moves=self.playerBHand)
 
             else:  # Leading player wins the hand
@@ -547,10 +579,13 @@ class Briscas(Game):
 
         print('Player A\'s points: ' + str(self.playerAPoints))
         print('Player B\'s points: ' + str(self.playerBPoints))
-        print('Trump Card: ' + str(state.board['trumpCard']))
+        print('Trump Card: [' + str(state.board['trumpCard'][0]) + ' of ' + state.board['trumpCard'][1].upper() + "]")
         print('Cards left in deck: ' + str(len(self.cards)))
 
-        print('\n\n\t\t\t\tPlayer A played: ' + str(state.board['playerAPlayedCard']))
+        if(state.board['playerAPlayedCard'] is not None):
+            print('\n\n\t\t\t\tPlayer A played: [' + str(state.board['playerAPlayedCard'][0]) + ' of ' + state.board['playerAPlayedCard'][1].upper() + "]")
+        else:
+            print('\n\n\t\t\t\tPlayer A has not played')
 
         print('\nTurn: ' + state.to_move)
 
@@ -567,8 +602,8 @@ class Briscas(Game):
 
                 if(state.board['leadingPlayer'] == 'B'):
                     print('\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-                    print('\n\n\t\t\t\tPlayer A played: ' + str(move))
-                    print('\n\n\t\t\t\tPlayer B played: ' + str(state.board['playerBPlayedCard']))
+                    print('\n\n\t\t\t\tPlayer A played: [' + str(move[0]) + ' of ' + move[1].upper() + "]")
+                    print('\n\n\t\t\t\tPlayer B played: [' + str(state.board['playerBPlayedCard'][0]) + ' of ' + state.board['playerBPlayedCard'][1].upper() + "]")
                     print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
 
 
@@ -576,26 +611,30 @@ class Briscas(Game):
 
                 if self.terminal_test(state):
                     #self.display(state)
-                    print('Player A\'s points: ' + str(self.playerAPoints))
-                    print('Player B\'s points: ' + str(self.playerBPoints))
+                    resultStr = 'Player A\'s points: ' + str(self.playerAPoints) + '\nPlayer B\'s points: ' + str(self.playerBPoints)
+                    messagebox.showinfo("Result", resultStr)
+                    
 
                     return self.utility(state, self.to_move(self.initial))
 
             else:
-                move = alphabeta_player(game, state)
+                move = query_player(game, state)
 
                 if (state.board['leadingPlayer'] == 'A'):
                     print('\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-                    print('\n\n\t\t\t\tPlayer A played: ' + str(state.board['playerAPlayedCard']))
-                    print('\n\n\t\t\t\tPlayer B played: ' + str(move))
+                    if(state.board['playerAPlayedCard'] is not None):
+                        print('\n\n\t\t\t\tPlayer A played: [' + str(state.board['playerAPlayedCard'][0]) + ' of ' + state.board['playerAPlayedCard'][1].upper() + "]")
+                    else:
+                        print('\n\n\t\t\t\tPlayer A has not played')
+
+                    print('\n\n\t\t\t\tPlayer B played: [' + str(move[0]) + ' of ' + move[1].upper() + "]")
                     print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n')
 
                 state = self.result(state, move)
                 if self.terminal_test(state):
                     # self.display(state)
-                    print('Player A\'s points: ' + str(self.playerAPoints))
-                    print('Player B\'s points: ' + str(self.playerBPoints))
-
+                    resultStr = 'Player A\'s points: ' + str(self.playerAPoints) + '\nPlayer B\'s points: ' + str(self.playerBPoints)
+                    messagebox.showinfo("Result", resultStr)
                     return self.utility(state, self.to_move(self.initial))
 
 
